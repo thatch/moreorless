@@ -1,6 +1,16 @@
 # morelorless
 
+This is a thin wrapper around `difflib.unified_diff` that Does The Right Thing
+for "No newline at eof".  The args are also simplified compared to `difflib`:
 
+```
+moreorless.unified_diff(
+    astr: str,
+    bstr: str,
+    filename: str,
+    n: int = 3,
+) -> str
+```
 
 # License
 

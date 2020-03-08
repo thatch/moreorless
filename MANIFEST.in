@@ -1,2 +1,2 @@
 include *.md LICENSE
-recursive-include moreorless *.txt
+recursive-include moreorless *.txt py.typed
