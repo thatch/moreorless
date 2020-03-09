@@ -10,6 +10,11 @@ moreorless.unified_diff(
     filename: str,
     n: int = 3,
 ) -> str
+
+moreorless.patch.apply_single_file(
+    contents: str,
+    patch: str,
+) -> str
 ```
 
 # License
