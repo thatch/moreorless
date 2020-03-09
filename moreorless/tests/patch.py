@@ -15,9 +15,41 @@ from ..patch import (
 
 class PatchTest(unittest.TestCase):
     @parameterized.expand(  # type: ignore
-        [("a\nb\n", "a\n"), ("a\nb\n", "b\n"), ("a\nb\n", "a\nb"), ("a\nb", "a\nb\n"),]
+        [
+            ("a", "b"),
+            ("", "b"),
+            ("a", ""),
+            ("", "b\n"),
+            ("a\n", ""),
+            ("a\nb\n", "a\n"),
+            ("a\nb\n", "b\n"),
+            ("a\nb\n", "a\nb"),
+            ("a\nb", "a\nb\n"),
+        ]
     )
     def test_patch(self, a: str, b: str) -> None:
+        diff = unified_diff(a, b, "foo")
+        result = apply_single_file(a, diff)
+        self.assertEqual(b, result)
+
+        # Although we don't produce these, allow CRLF on the "No newline" line
+        # to strip the full previous newline.
+        if "No newline" in diff:
+            dos_diff = diff.replace("\n\\ No newline", "\r\n\\ No newline")
+            result = apply_single_file(a, dos_diff)
+            self.assertEqual(b, result)
+
+    @parameterized.expand(  # type: ignore
+        [
+            ("", "b\r\n"),
+            ("a\r\n", ""),
+            ("a\r\nb\r\n", "a\r\n"),
+            ("a\r\nb\r\n", "b\r\n"),
+            ("a\r\nb\r\n", "a\r\nb"),
+            ("a\r\nb", "a\r\nb\r\n"),
+        ]
+    )
+    def test_patch_crlf(self, a: str, b: str) -> None:
         diff = unified_diff(a, b, "foo")
         result = apply_single_file(a, diff)
         self.assertEqual(b, result)

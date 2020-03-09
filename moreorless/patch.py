@@ -88,7 +88,12 @@ def _apply_hunks(lines: List[str], hunks: List[Hunk]) -> List[str]:
         for i in range(len(tmp) - 1, 0, -1):
             if tmp[i].startswith("\\ No newline"):
                 del tmp[i]
-                tmp[i - 1] = tmp[i - 1][:-1]  # strip newline
+                # strips newline (including dos newlines, although we don't
+                # produce a those in moreorless.unified_diff)
+                if tmp[i - 1].endswith("\r\n"):
+                    tmp[i - 1] = tmp[i - 1][:-2]
+                else:
+                    tmp[i - 1] = tmp[i - 1][:-1]
 
         for line in tmp[1:]:
             if line.startswith("-"):
