@@ -1,12 +1,14 @@
 import random
 import unittest
-from typing import List, Optional
+from typing import Any, List, Optional
+from unittest.mock import patch
 
 from parameterized import parameterized
 
 from .. import unified_diff
 from ..patch import (
     PatchException,
+    _context_match,
     _parse_position_line,
     _split_hunks,
     apply_single_file,
@@ -88,8 +90,8 @@ class PatchTest(unittest.TestCase):
 
     @parameterized.expand(  # type: ignore
         [
-            ("---\n+++\n@@ -1 +1 @@\n-invalid\n", "DELETE fail at 0"),
-            ("---\n+++\n@@ -1 +1 @@\n invalid\n", "EQUAL fail at 0"),
+            ("---\n+++\n@@ -1 +1 @@\n-invalid\n", "Failed to apply with offset at 0"),
+            ("---\n+++\n@@ -1 +1 @@\n invalid\n", "Failed to apply with offset at 0"),
             ("---\n+++\n@@ -1 +1 @@\nxinvalid\n", "Unknown line 'xinvalid\\\\n' at 0"),
         ]
     )
@@ -97,7 +99,44 @@ class PatchTest(unittest.TestCase):
         with self.assertRaisesRegex(PatchException, msg):
             apply_single_file("foo\n", diff)
 
+    @parameterized.expand(  # type: ignore
+        [
+            ("---\n+++\n@@ -1 +1 @@\n-invalid\n", "DELETE fail at 0"),
+            ("---\n+++\n@@ -1 +1 @@\n invalid\n", "EQUAL fail at 0"),
+            ("---\n+++\n@@ -1 +1 @@\nxinvalid\n", "Unknown line 'xinvalid\\\\n' at 0"),
+        ]
+    )
+    def test_exceptions_no_offset(self, diff: str, msg: str) -> None:
+        with self.assertRaisesRegex(PatchException, msg):
+            apply_single_file("foo\n", diff, allow_offsets=False)
+
     def test_split_hunks_edge_cases(self) -> None:
         with self.assertRaisesRegex(PatchException, "Lines without hunk header.*"):
             _split_hunks(["foo\n"])
         self.assertEqual([], _split_hunks([]))
+
+    @patch("moreorless.patch.LOG.info")
+    def test_patch_small_offset(self, log_info: Any) -> None:
+        a = "a\nb\nc\n"
+        b = "a\nB\nc\n"
+        modified = "x\n" + a
+        expected = "x\n" + b
+
+        diff = unified_diff(a, b, "foo")
+        result = apply_single_file(modified, diff)
+        self.assertEqual(expected, result)
+        log_info.assert_called_with("Offset 1")
+
+    @parameterized.expand(  # type: ignore
+        [
+            ((["0", "1", "2", "3"], 0, 5, 0), 0),  # can match at start
+            ((["0", "1", "2", "3"], 0, 5, 1), 0),  # can match earlier
+            ((["1", "2", "3", "4"], 0, 5, 0), 1),  # can match later
+        ]
+    )
+    def test_context_match(self, args: Any, expected: Optional[int]) -> None:
+        self.assertEqual(expected, _context_match(["0", "1", "2", "3", "4"], *args))
+
+    def test_context_match_tie(self) -> None:
+        # ties resolve earlier
+        self.assertEqual(0, _context_match(["0", "1", "0"], ["0"], 0, 3, 1))

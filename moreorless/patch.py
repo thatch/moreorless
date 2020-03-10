@@ -1,18 +1,21 @@
+import logging
 import re
 from dataclasses import dataclass, field
 from typing import List, Optional, Sequence
 
-__all__ = ["apply_single_file"]
+__all__ = ["apply_single_file", "PatchException"]
+
+LOG = logging.getLogger(__name__)
 
 
-def apply_single_file(contents: str, patch: str) -> str:
+def apply_single_file(contents: str, patch: str, allow_offsets: bool = True) -> str:
     """
     Apply a clean patch, no fuzz, no rejects.
     """
 
     lines = contents.splitlines(True)
     hunks = _split_hunks(patch.splitlines(True)[2:])
-    return "".join(_apply_hunks(lines, hunks))
+    return "".join(_apply_hunks(lines, hunks, allow_offsets))
 
 
 POSITION_LINE_RE = re.compile(r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
@@ -67,9 +70,10 @@ def _split_hunks(diff_lines: Sequence[str]) -> List[Hunk]:
     return hunks
 
 
-def _apply_hunks(lines: List[str], hunks: List[Hunk]) -> List[str]:
+def _apply_hunks(lines: List[str], hunks: List[Hunk], allow_offsets: bool) -> List[str]:
     work = lines[:]
     file_offset = 0  # accumulation of delta
+    prev_line = 0
     for hunk in hunks:
         assert hunk.position is not None
         pos = hunk.position[:]
@@ -94,6 +98,19 @@ def _apply_hunks(lines: List[str], hunks: List[Hunk]) -> List[str]:
                     tmp[i - 1] = tmp[i - 1][:-2]
                 else:
                     tmp[i - 1] = tmp[i - 1][:-1]
+        if allow_offsets:
+            tmp2 = [t[1:] for t in tmp if t[0] in (" ", "-")]
+            # TODO if hunks overlap, this checks against the already-modified
+            # one for context, which seems wrong.  Unmodified file is something
+            # like _context_match(lines, tmp2, ..., prev_line+file_offset)-file_offset
+
+            # On a proper patch this always takes in cur_line and returns cur_line
+            new_line = _context_match(work, tmp2, prev_line, len(work), cur_line)
+            if new_line is None:
+                raise PatchException(f"Failed to apply with offset at {cur_line}")
+            if cur_line != new_line:
+                LOG.info(f"Offset {new_line-cur_line}")
+                cur_line = new_line
 
         for line in tmp[1:]:
             if line.startswith("-"):
@@ -112,5 +129,42 @@ def _apply_hunks(lines: List[str], hunks: List[Hunk]) -> List[str]:
             else:
                 raise PatchException(f"Unknown line {line!r} at {cur_line}")
         file_offset += pos[3] - pos[1]
+        prev_line = cur_line
 
     return work
+
+
+def _context_match(
+    file_lines: List[str],
+    context_lines: List[str],
+    range_start: int,
+    range_end: int,
+    start: int,
+) -> Optional[int]:
+    """
+    Finds an offset within file_lines to match context.
+
+    Returns i such that:
+    * file_lines[i:i+len] == context_lines
+    * i >= range_start
+    * i <= range_end - len
+    * minimizes abs(i-start)
+    * minimizes i if there's a tie on abs
+    """
+    cl = len(context_lines)
+    assert range_start >= 0
+    assert range_end >= range_start
+    assert range_end <= len(file_lines)
+    assert start >= range_start
+    assert start <= range_end - cl
+
+    for di in range(0, max(start - range_start + 1, range_end - start - cl + 1)):
+        t1 = start - di
+        t2 = start + di
+        if t1 >= range_start:
+            if all(context_lines[j] == file_lines[t1 + j] for j in range(cl)):
+                return t1
+        if t2 + cl <= range_end:
+            if all(context_lines[j] == file_lines[t2 + j] for j in range(cl)):
+                return t2
+    return None

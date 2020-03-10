@@ -11,9 +11,11 @@ moreorless.unified_diff(
     n: int = 3,
 ) -> str
 
+# raises moreorless.patch.PatchException
 moreorless.patch.apply_single_file(
     contents: str,
     patch: str,
+    allow_offsets: bool = True,
 ) -> str
 ```
 
