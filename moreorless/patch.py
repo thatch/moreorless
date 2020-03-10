@@ -24,6 +24,9 @@ POSITION_LINE_RE = re.compile(r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
 class PatchException(Exception):
     pass
 
+class ContextException(PatchException):
+    pass
+
 
 def _parse_position_line(position_line: str) -> List[int]:
     """Given an `@@` line, return the four numbers within."""
@@ -61,7 +64,7 @@ def _split_hunks(diff_lines: Sequence[str]) -> List[Hunk]:
         # There should not be '---' or '+++' lines here, they are stripped off
         # in apply_single_file.
         if not hunk:
-            raise PatchException("Lines without hunk header at {line!r}")
+            raise PatchException(f"Lines without hunk header at {line!r}")
         hunk.lines.append(line)
 
     if hunk and hunk.lines:
@@ -152,11 +155,16 @@ def _context_match(
     * minimizes i if there's a tie on abs
     """
     cl = len(context_lines)
-    assert range_start >= 0
-    assert range_end >= range_start
-    assert range_end <= len(file_lines)
-    assert start >= range_start
-    assert start <= range_end - cl
+    if not range_start >= 0:
+        raise ContextException("context error 1: negative range_start")
+    if not range_end >= range_start:
+        raise ContextException("context error 2: flipped range")
+    if not range_end <= len(file_lines):
+        raise ContextException("context error 3: past end")
+    if not start >= range_start:
+        raise ContextException("context error 4: start before range_start")
+    if not start <= range_end - cl:
+        raise ContextException("context error 5: start past range_end")
 
     for di in range(0, max(start - range_start + 1, range_end - start - cl + 1)):
         t1 = start - di
