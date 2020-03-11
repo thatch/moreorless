@@ -17,6 +17,14 @@ moreorless.patch.apply_single_file(
     patch: str,
     allow_offsets: bool = True,
 ) -> str
+
+# uses click to write to stdout with colors
+moreorless.click.echo_color_unified_diff(
+    astr: str,
+    bstr: str,
+    filename: str,
+    n: int = 3
+) -> None
 ```
 
 # License
