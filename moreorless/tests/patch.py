@@ -132,6 +132,8 @@ class PatchTest(unittest.TestCase):
             ((["0", "1", "2", "3"], 0, 5, 0), 0),  # can match at start
             ((["0", "1", "2", "3"], 0, 5, 1), 0),  # can match earlier
             ((["1", "2", "3", "4"], 0, 5, 0), 1),  # can match later
+            ((["4"], 0, 5, 0), 4),  # can match later
+            ((["5"], 0, 4, 3), None),  # no possible match, starts past mid
         ]
     )
     def test_context_match(self, args: Any, expected: Optional[int]) -> None:
@@ -140,3 +142,15 @@ class PatchTest(unittest.TestCase):
     def test_context_match_tie(self) -> None:
         # ties resolve earlier
         self.assertEqual(0, _context_match(["0", "1", "0"], ["0"], 0, 3, 1))
+
+    def test_edge_cases(self) -> None:
+        with self.assertRaisesRegex(PatchException, "negative range_start"):
+            _context_match(["0", "1", "2"], ["0"], -1, 3, 0)
+        with self.assertRaisesRegex(PatchException, "flipped range"):
+            _context_match(["0", "1", "2"], ["0"], 3, 0, 0)
+        with self.assertRaisesRegex(PatchException, "past end"):
+            _context_match(["0", "1", "2"], ["0"], 0, 4, 0)
+        with self.assertRaisesRegex(PatchException, "start before range_start"):
+            _context_match(["0", "1", "2"], ["0"], 1, 3, 0)
+        with self.assertRaisesRegex(PatchException, "start past range_end"):
+            _context_match(["0", "1", "2"], ["0"], 0, 3, 3)

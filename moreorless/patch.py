@@ -24,6 +24,7 @@ POSITION_LINE_RE = re.compile(r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
 class PatchException(Exception):
     pass
 
+
 class ContextException(PatchException):
     pass
 
