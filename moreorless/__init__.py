@@ -1,4 +1,5 @@
 import difflib
+import os.path
 
 __all__ = ["unified_diff"]
 
@@ -12,13 +13,16 @@ def unified_diff(astr: str, bstr: str, filename: str, n: int = 3,) -> str:
 
     Does handle the "no newline at end of file" properly UNLIKE DIFFLIB.
     """
+    if os.path.isabs(filename):
+        a_filename = filename
+        b_filename = filename
+    else:
+        a_filename = f"a/{filename}"
+        b_filename = f"b/{filename}"
+
     buf = []
     gen = difflib.unified_diff(
-        astr.splitlines(True),
-        bstr.splitlines(True),
-        f"a/{filename}",
-        f"b/{filename}",
-        n=n,
+        astr.splitlines(True), bstr.splitlines(True), a_filename, b_filename, n=n,
     )
     for line in gen:
         buf.append(line)

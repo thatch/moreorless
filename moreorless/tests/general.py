@@ -36,3 +36,16 @@ class ParityTest(unittest.TestCase):
 
             actual = unified_diff(a, b, "file")
             self.assertEqual(expected, actual)
+
+    def test_absolute_paths(self):
+        actual = unified_diff("a\n", "a\nb\n", "/file")
+        self.assertEqual(
+            """\
+--- /file
++++ /file
+@@ -1 +1,2 @@
+ a
++b
+""",
+            actual,
+        )
