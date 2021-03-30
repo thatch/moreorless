@@ -57,7 +57,12 @@ class PatchTest(unittest.TestCase):
         self.assertEqual(b, result)
 
     @parameterized.expand(  # type: ignore
-        [(0,), (1,), (2,), (3,),]
+        [
+            (0,),
+            (1,),
+            (2,),
+            (3,),
+        ]
     )
     def test_exhaustive(self, context: int) -> None:
         for i in range(100):

@@ -4,7 +4,12 @@ import os.path
 __all__ = ["unified_diff"]
 
 
-def unified_diff(astr: str, bstr: str, filename: str, n: int = 3,) -> str:
+def unified_diff(
+    astr: str,
+    bstr: str,
+    filename: str,
+    n: int = 3,
+) -> str:
     """
     Returns a unified diff string for the two inputs.
 
@@ -22,7 +27,11 @@ def unified_diff(astr: str, bstr: str, filename: str, n: int = 3,) -> str:
 
     buf = []
     gen = difflib.unified_diff(
-        astr.splitlines(True), bstr.splitlines(True), a_filename, b_filename, n=n,
+        astr.splitlines(True),
+        bstr.splitlines(True),
+        a_filename,
+        b_filename,
+        n=n,
     )
     for line in gen:
         buf.append(line)

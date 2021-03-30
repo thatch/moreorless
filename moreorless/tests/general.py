@@ -10,7 +10,13 @@ from .. import unified_diff
 
 class ParityTest(unittest.TestCase):
     @parameterized.expand(  # type: ignore
-        [("a", "a"), ("a", "b"), ("a\n", "b"), ("a", "b\n"), ("a\n", "b\n"),]
+        [
+            ("a", "a"),
+            ("a", "b"),
+            ("a\n", "b"),
+            ("a", "b\n"),
+            ("a\n", "b\n"),
+        ]
     )
     def test_parity(self, a: str, b: str) -> None:
         with tempfile.TemporaryDirectory() as d:
