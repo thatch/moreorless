@@ -10,18 +10,7 @@ def echo_color_unified_diff(astr: str, bstr: str, filename: str, n: int = 3) -> 
     """
     Just like `moreorless.unified_diff` except using `click.secho`.
     """
-    for line in unified_diff(astr, bstr, filename, n).splitlines(True):
-        # TODO benchmark and see if constructing the string up front is faster
-        if line.startswith("---") or line.startswith("+++"):
-            click.secho(line, bold=True, nl=False)
-        elif line.startswith("@@"):
-            click.secho(line, fg="cyan", nl=False)
-        elif line.startswith("-"):
-            click.secho(line, fg="red", nl=False)
-        elif line.startswith("+"):
-            click.secho(line, fg="green", nl=False)
-        else:
-            click.secho(line, nl=False)
+    echo_color_precomputed_diff(unified_diff(astr, bstr, filename, n))
 
 
 def echo_color_precomputed_diff(diff: str) -> None:

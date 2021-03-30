@@ -3,20 +3,22 @@
 This is a thin wrapper around `difflib.unified_diff` that Does The Right Thing
 for "No newline at eof".  The args are also simplified compared to `difflib`:
 
-```
+```py
 moreorless.unified_diff(
     astr: str,
     bstr: str,
     filename: str,
     n: int = 3,
-) -> str
+) -> str:
+    ...
 
 # raises moreorless.patch.PatchException
 moreorless.patch.apply_single_file(
     contents: str,
     patch: str,
     allow_offsets: bool = True,
-) -> str
+) -> str:
+    ...
 
 # uses click to write to stdout with colors
 moreorless.click.echo_color_unified_diff(
@@ -24,7 +26,14 @@ moreorless.click.echo_color_unified_diff(
     bstr: str,
     filename: str,
     n: int = 3
-) -> None
+) -> None:
+    ...
+
+# if you want to use unified_diff yourself first (e.g. in another process)
+moreorless.click.echo_color_precomputed_diff(
+    diff: str,
+) -> None:
+    ...
 ```
 
 # License
