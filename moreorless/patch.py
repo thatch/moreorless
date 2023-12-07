@@ -113,7 +113,7 @@ def _apply_hunks(lines: List[str], hunks: List[Hunk], allow_offsets: bool) -> Li
             if new_line is None:
                 raise PatchException(f"Failed to apply with offset at {cur_line}")
             if cur_line != new_line:
-                LOG.info(f"Offset {new_line-cur_line}")
+                LOG.info(f"Offset {new_line - cur_line}")
                 cur_line = new_line
 
         for line in tmp[1:]:
