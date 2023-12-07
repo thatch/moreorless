@@ -7,11 +7,11 @@ from parameterized import parameterized
 
 from .. import unified_diff
 from ..patch import (
-    PatchException,
     _context_match,
     _parse_position_line,
     _split_hunks,
     apply_single_file,
+    PatchException,
 )
 
 
