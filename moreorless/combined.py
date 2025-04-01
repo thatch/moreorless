@@ -10,7 +10,7 @@ diff-of-diff, which is hard for humans to parse).
 """
 
 from difflib import SequenceMatcher
-from typing import List, Sequence, Tuple
+from typing import Dict, List, Sequence, Tuple
 
 
 def _line_symbols(
@@ -19,11 +19,13 @@ def _line_symbols(
 ) -> List[Tuple[str, ...]]:
     dest_lines = common.splitlines()
     # (file_symbol, ...)
-    dest_line_symbols = [[] for _ in range(len(dest_lines))]
+    dest_line_symbols: List[List[str]] = [[] for _ in range(len(dest_lines))]
     # dest_idx: {text: {idx: symbol}}
-    inserted_lines = [{} for _ in range(len(dest_lines) + 1)]  # TODO + 1?
+    inserted_lines: List[Dict[str, Dict[int, str]]] = [
+        {} for _ in range(len(dest_lines) + 1)
+    ]
 
-    def helper(s, dest_idx):
+    def helper(s: str, dest_idx: int) -> Dict[int, str]:
         if s not in inserted_lines[dest_idx]:
             inserted_lines[dest_idx][s] = {}
         return inserted_lines[dest_idx][s]
@@ -38,20 +40,18 @@ def _line_symbols(
                     helper(src_lines[i], j1)[si] = "-"
                 elif tag == "replace":
                     helper(src_lines[i], j1)[si] = "-"
-                # equal isn't an insertion, and insertion should have i1==i2
+                else:
+                    assert tag == "equal"
 
             for i in range(j1, j2):
                 if tag == "equal":
                     dest_line_symbols[i].append(" ")
-                elif tag == "delete":
-                    # not covered, should not happen
-                    dest_line_symbols[i].append("-")
                 elif tag == "insert":
                     dest_line_symbols[i].append("+")
                 elif tag == "replace":
                     dest_line_symbols[i].append("+")
-            #
-            # print(tag, i1, i2, j1, j2)
+                else:  # pragma: no cover
+                    raise AssertionError(tag)
 
         # TODO no newline at eof
 
@@ -106,7 +106,3 @@ def merge_diff(
     for text, *symbols in _line_symbols(files, common=final):
         buf.append("".join(symbols) + text + "\n")
     return "".join(buf)
-
-
-if __name__ == "__main__":
-    print(combined_diff(("a\n", "a\nb\n", "a\nb\nc\n")))
