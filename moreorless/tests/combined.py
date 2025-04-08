@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from moreorless.combined import _line_symbols, combined_diff
+from moreorless.combined import _contributions, combined_diff
 
 
 class DivergentDiffTest(TestCase):
@@ -11,6 +11,7 @@ class DivergentDiffTest(TestCase):
 --- a/file
 +++ b/file
 +++ b/file
+@@@ -1,0 +1,1 +1,1 @@@
 + a
  +b
 """,
@@ -26,8 +27,58 @@ class DivergentDiffTest(TestCase):
 --- x
 +++ y
 +++ z
+@@@ -1,0 +1,1 +1,1 @@@
 + a
  +b
+""",
+            result,
+        )
+
+    def test_basic_context(self) -> None:
+        result = combined_diff(
+            ["a\nb\nc\nd\ne\nf\ng\n", "b\nc\nd\ne\nf\n"], merge=False
+        )
+        self.assertEqual(
+            """\
+--- a/file
++++ b/file
+@@ -1,7 +1,5 @@
+-a
+ b
+ c
+ d
+ e
+ f
+-g
+""",
+            result,
+        )
+
+    def test_basic_context1(self) -> None:
+        result = combined_diff(
+            ["a\nb\nc\nd\ne\nf\ng\n", "b\nc\nd\ne\nf\n"], merge=False, context=1
+        )
+        self.assertEqual(
+            """\
+--- a/file
++++ b/file
+@@ -1,2 +1,1 @@
+-a
+ b
+@@ -5,2 +4,1 @@
+ f
+-g
+""",
+            result,
+        )
+
+    # Buggy
+    def test_basic_context_final_output(self) -> None:
+        result = combined_diff(["a\nb\nc\nd\n", "a\nb\nc\nd\n"], merge=False, context=1)
+        self.assertEqual(
+            """\
+--- a/file
++++ b/file
 """,
             result,
         )
@@ -35,54 +86,52 @@ class DivergentDiffTest(TestCase):
     def test_two(self) -> None:
         self.assertEqual(
             [
-                ("a", " "),
-                ("b", "-"),
-                ("c", "-"),
+                ((1, 1), "a\n"),
+                ((0, 1), "b\n"),
+                ((0, 1), "c\n"),
             ],
-            _line_symbols(["a\n"], common="a\nb\nc\n", merge=False),
+            _contributions(["a\n"], common="a\nb\nc\n", merge=False),
         )
 
     def test_two_removal(self) -> None:
         self.assertEqual(
             [
-                ("a", " "),
-                ("b", "+"),
+                ((1, 1), "a\n"),
+                ((1, 0), "b\n"),
             ],
-            _line_symbols(["a\nb\n"], common="a\n", merge=False),
+            _contributions(["a\nb\n"], common="a\n", merge=False),
         )
 
     def test_two_replace(self) -> None:
         self.assertEqual(
             [
-                ("x", "-"),
-                ("a", "+"),
-                ("b", " "),
+                ((0, 1), "x\n"),
+                ((1, 0), "a\n"),
+                ((1, 1), "b\n"),
             ],
-            _line_symbols(["a\nb\n"], common="x\nb\n", merge=False),
+            _contributions(["a\nb\n"], common="x\nb\n", merge=False),
         )
 
     def test_three(self) -> None:
         self.assertEqual(
             [
-                #     a    ab
-                ("a", " ", " "),
-                ("b", "-", " "),
-                ("c", "-", "-"),
+                ((1, 1, 1), "a\n"),
+                ((0, 1, 1), "b\n"),
+                ((0, 0, 1), "c\n"),
             ],
-            _line_symbols(["a\n", "a\nb\n"], common="a\nb\nc\n", merge=False),
+            _contributions(["a\n", "a\nb\n"], common="a\nb\nc\n", merge=False),
         )
 
     def test_three_insert_same(self) -> None:
         # this covers the path inside `helper` when we already have a matching line
         self.assertEqual(
             [
-                #     abc  abd
-                ("a", " ", " "),
-                ("c", " ", "-"),
-                ("b", "+", "+"),
-                ("d", " ", "+"),
+                ((1, 1, 1), "a\n"),
+                ((1, 0, 1), "c\n"),
+                ((1, 1, 0), "b\n"),
+                ((0, 1, 0), "d\n"),
             ],
-            _line_symbols(["a\nb\nc\n", "a\nb\nd\n"], common="a\nc\n", merge=False),
+            _contributions(["a\nb\nc\n", "a\nb\nd\n"], common="a\nc\n", merge=False),
         )
 
 
@@ -94,6 +143,7 @@ class MergeDiffTest(TestCase):
 --- a/file
 --- a/file
 +++ b/file
+@@@ -1,1 -1,1 +1,0 @@@
 - a
  -b
 """,
@@ -109,6 +159,7 @@ class MergeDiffTest(TestCase):
 --- x
 --- y
 +++ z
+@@@ -1,1 -1,1 +1,0 @@@
 - a
  -b
 """,
@@ -118,52 +169,50 @@ class MergeDiffTest(TestCase):
     def test_two(self) -> None:
         self.assertEqual(
             [
-                ("a", " "),
-                ("b", "+"),
-                ("c", "+"),
+                ((1, 1), "a\n"),
+                ((0, 1), "b\n"),
+                ((0, 1), "c\n"),
             ],
-            _line_symbols(["a\n"], common="a\nb\nc\n", merge=True),
+            _contributions(["a\n"], common="a\nb\nc\n", merge=True),
         )
 
     def test_two_removal(self) -> None:
         self.assertEqual(
             [
-                ("a", " "),
-                ("b", "-"),
+                ((1, 1), "a\n"),
+                ((1, 0), "b\n"),
             ],
-            _line_symbols(["a\nb\n"], common="a\n", merge=True),
+            _contributions(["a\nb\n"], common="a\n", merge=True),
         )
 
     def test_two_replace(self) -> None:
         self.assertEqual(
             [
-                ("a", "-"),
-                ("x", "+"),
-                ("b", " "),
+                ((1, 0), "a\n"),
+                ((0, 1), "x\n"),
+                ((1, 1), "b\n"),
             ],
-            _line_symbols(["a\nb\n"], common="x\nb\n", merge=True),
+            _contributions(["a\nb\n"], common="x\nb\n", merge=True),
         )
 
     def test_three(self) -> None:
         self.assertEqual(
             [
-                #     a    ab
-                ("a", " ", " "),
-                ("b", "+", " "),
-                ("c", "+", "+"),
+                ((1, 1, 1), "a\n"),
+                ((0, 1, 1), "b\n"),
+                ((0, 0, 1), "c\n"),
             ],
-            _line_symbols(["a\n", "a\nb\n"], common="a\nb\nc\n", merge=True),
+            _contributions(["a\n", "a\nb\n"], common="a\nb\nc\n", merge=True),
         )
 
     def test_three_insert_same(self) -> None:
         # this covers the path inside `helper` when we already have a matching line
         self.assertEqual(
             [
-                #     abc  abd
-                ("a", " ", " "),
-                ("b", "-", "-"),
-                ("d", " ", "-"),
-                ("c", " ", "+"),
+                ((1, 1, 1), "a\n"),
+                ((1, 1, 0), "b\n"),
+                ((0, 1, 0), "d\n"),
+                ((1, 0, 1), "c\n"),
             ],
-            _line_symbols(["a\nb\nc\n", "a\nb\nd\n"], common="a\nc\n", merge=True),
+            _contributions(["a\nb\nc\n", "a\nb\nd\n"], common="a\nc\n", merge=True),
         )
