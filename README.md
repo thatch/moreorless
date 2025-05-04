@@ -34,6 +34,12 @@ moreorless.click.echo_color_precomputed_diff(
     diff: str,
 ) -> None:
     ...
+
+# if you want to produce a combined (merge) diff:
+moreorless.combined.combined_diff(
+    [astr, bstr], [cstr]
+) -> str:
+    ...
 ```
 
 # License
