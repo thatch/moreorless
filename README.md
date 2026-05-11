@@ -44,7 +44,7 @@ moreorless.combined.combined_diff(
 
 # Version Compat
 
-This library is compatible with Python 3.10+, and should be linted under the
+This library is compatible with Python 3.9+, but should be linted under the
 newest stable version.
 
 # Versioning
