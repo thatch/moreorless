@@ -33,5 +33,5 @@ format:
 .PHONY: lint
 lint:
 	ruff check
-	python -m checkdeps --allow-names moreorless moreorless
+	python -m checkdeps --allow-names moreorless,click moreorless
 	mypy --strict --install-types --non-interactive moreorless
