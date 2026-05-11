@@ -1,4 +1,5 @@
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -40,6 +41,7 @@ def test_parity(a: str, b: str) -> None:
         assert unified_diff(a, b, "file") == expected
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Unix-style absolute paths")
 def test_absolute_paths() -> None:
     actual = unified_diff("a\n", "a\nb\n", "/file")
     assert actual == """\
