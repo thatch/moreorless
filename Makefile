@@ -1,36 +1,37 @@
-PYTHON?=python
-SOURCES=moreorless setup.py
+ifeq ($(OS),Windows_NT)
+    ACTIVATE:=.venv/Scripts/activate
+else
+    ACTIVATE:=.venv/bin/activate
+endif
 
-.PHONY: venv
-venv:
-	$(PYTHON) -m venv .venv
-	source .venv/bin/activate && make setup
-	@echo 'run `source .venv/bin/activate` to use virtualenv'
+UV:=$(shell uv --version)
+ifdef UV
+	VENV:=uv venv
+	PIP:=uv pip
+else
+	VENV:=python -m venv
+	PIP:=python -m pip
+endif
 
-# The rest of these are intended to be run within the venv, where python points
-# to whatever was used to set up the venv.
+.venv:
+	$(VENV) .venv
 
 .PHONY: setup
-setup:
-	python -m pip install -Ur requirements-dev.txt
+setup: .venv
+	source $(ACTIVATE) && $(PIP) install -Ue .[dev,test]
 
 .PHONY: test
 test:
-	python -m coverage run -m moreorless.tests $(TESTOPTS)
+	python -m coverage run -m pytest $(TESTOPTS)
 	python -m coverage report
 
 .PHONY: format
 format:
-	python -m ufmt format $(SOURCES)
+	ruff format
+	ruff check --fix
 
 .PHONY: lint
 lint:
-	python -m ufmt check $(SOURCES)
-	python -m flake8 $(SOURCES)
-	mypy --strict moreorless
-
-.PHONY: release
-release:
-	rm -rf dist
-	python setup.py sdist bdist_wheel
-	twine upload dist/*
+	ruff check
+	python -m checkdeps --allow-names moreorless moreorless
+	mypy --strict --install-types --non-interactive moreorless

@@ -1,7 +1,7 @@
 import difflib
 import os.path
 
-__all__ = ["unified_diff"]
+__all__ = ["unified_diff", "__version__"]
 
 
 def unified_diff(
@@ -40,3 +40,8 @@ def unified_diff(
             buf.append("\n\\ No newline at end of file\n")
 
     return "".join(buf)
+
+try:
+    from ._version import __version__
+except ImportError:  # pragma: no cover
+    __version__ = "dev"
