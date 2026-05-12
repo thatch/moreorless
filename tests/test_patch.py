@@ -66,7 +66,11 @@ def test_exhaustive(context: int) -> None:
     [
         ("@@ -5 +9 @@", [5, 1, 9, 1]),
         ("@@ -5,2 +9,3 @@", [5, 2, 9, 3]),
+        ("@@ -5,2 +9,3 @@ some_function", [5, 2, 9, 3]),
+        ("@@ -5,2 +9,3 @@\n", [5, 2, 9, 3]),
+        ("@@ -5,2 +9,3 @@ some_function\n", [5, 2, 9, 3]),
         ("@@ invalid @@", None),
+        ("@@ -1 +1 @@ trailing garbage after newline\nextra", None),
     ],
 )
 def test_parse_position_line(line: str, expected: Optional[List[int]]) -> None:
@@ -77,12 +81,36 @@ def test_parse_position_line(line: str, expected: Optional[List[int]]) -> None:
         assert _parse_position_line(line) == expected
 
 
+def test_hunk_count_mismatch_new() -> None:
+    # Header says +1 new line, but body has 2 (context + addition)
+    lines = ["@@ -1 +1 @@\n", " a\n", "+b\n"]
+    with pytest.raises(PatchException, match="declares 1 new lines but body has 2"):
+        _split_hunks(lines)
+
+
+def test_hunk_count_mismatch_old() -> None:
+    # Header says -1 old line, but body has 2 (context + deletion)
+    lines = ["@@ -1 +1 @@\n", " a\n", "-b\n"]
+    with pytest.raises(PatchException, match="declares 1 old lines but body has 2"):
+        _split_hunks(lines)
+
+
+def test_hunk_count_valid_with_no_newline_marker() -> None:
+    # "No newline" markers should not count toward line totals
+    lines = ["@@ -1 +1 @@\n", "-a\n", "\\ No newline at end of file\n", "+b\n"]
+    result = _split_hunks(lines)
+    assert len(result) == 1
+
+
 @pytest.mark.parametrize(
     "diff,msg",
     [
-        ("---\n+++\n@@ -1 +1 @@\n-invalid\n", "Failed to apply with offset at 0"),
+        # Count mismatch caught in _split_hunks before apply
+        ("---\n+++\n@@ -1 +1 @@\n-invalid\n", "declares 1 new lines but body has 0"),
+        # Content mismatch caught at apply time
         ("---\n+++\n@@ -1 +1 @@\n invalid\n", "Failed to apply with offset at 0"),
-        ("---\n+++\n@@ -1 +1 @@\nxinvalid\n", "Unknown line 'xinvalid\\\\n' at 0"),
+        # Count mismatch: unknown line type contributes 0 to either count
+        ("---\n+++\n@@ -1 +1 @@\nxinvalid\n", "declares 1 old lines but body has 0"),
     ],
 )
 def test_exceptions(diff: str, msg: str) -> None:
@@ -93,9 +121,12 @@ def test_exceptions(diff: str, msg: str) -> None:
 @pytest.mark.parametrize(
     "diff,msg",
     [
-        ("---\n+++\n@@ -1 +1 @@\n-invalid\n", "DELETE fail at 0"),
+        # Count mismatch caught in _split_hunks before apply
+        ("---\n+++\n@@ -1 +1 @@\n-invalid\n", "declares 1 new lines but body has 0"),
+        # Content mismatch caught at apply time
         ("---\n+++\n@@ -1 +1 @@\n invalid\n", "EQUAL fail at 0"),
-        ("---\n+++\n@@ -1 +1 @@\nxinvalid\n", "Unknown line 'xinvalid\\\\n' at 0"),
+        # Count mismatch: unknown line type contributes 0 to either count
+        ("---\n+++\n@@ -1 +1 @@\nxinvalid\n", "declares 1 old lines but body has 0"),
     ],
 )
 def test_exceptions_no_offset(diff: str, msg: str) -> None:

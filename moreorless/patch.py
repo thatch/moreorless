@@ -18,7 +18,7 @@ def apply_single_file(contents: str, patch: str, allow_offsets: bool = True) -> 
     return "".join(_apply_hunks(lines, hunks, allow_offsets))
 
 
-POSITION_LINE_RE = re.compile(r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
+POSITION_LINE_RE = re.compile(r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@[^\n]*\n?")
 
 
 class PatchException(Exception):
@@ -31,7 +31,7 @@ class ContextException(PatchException):
 
 def _parse_position_line(position_line: str) -> List[int]:
     """Given an `@@` line, return the four numbers within."""
-    match = POSITION_LINE_RE.match(position_line)
+    match = POSITION_LINE_RE.fullmatch(position_line)
     if not match:
         raise PatchException(f"Position line {position_line!r} failed to parse")
     return [
@@ -49,6 +49,22 @@ class Hunk:
     lines: List[str] = field(default_factory=list)
 
 
+def _validate_hunk_counts(hunk: Hunk) -> None:
+    pos = hunk.position
+    assert pos is not None
+    body = [line for line in hunk.lines[1:] if not line.startswith("\\")]
+    old_count = sum(1 for line in body if line and line[0] in (" ", "-"))
+    new_count = sum(1 for line in body if line and line[0] in (" ", "+"))
+    if old_count != pos[1]:
+        raise PatchException(
+            f"Hunk header declares {pos[1]} old lines but body has {old_count}"
+        )
+    if new_count != pos[3]:
+        raise PatchException(
+            f"Hunk header declares {pos[3]} new lines but body has {new_count}"
+        )
+
+
 def _split_hunks(diff_lines: Sequence[str]) -> List[Hunk]:
     """
     Splits unified diff lines (after the file header) into hunks.
@@ -60,6 +76,7 @@ def _split_hunks(diff_lines: Sequence[str]) -> List[Hunk]:
         if line.startswith("@@"):
             # Start a new hunk
             if hunk:
+                _validate_hunk_counts(hunk)
                 hunks.append(hunk)
             hunk = Hunk(_parse_position_line(line))
         # There should not be '---' or '+++' lines here, they are stripped off
@@ -69,6 +86,7 @@ def _split_hunks(diff_lines: Sequence[str]) -> List[Hunk]:
         hunk.lines.append(line)
 
     if hunk and hunk.lines:
+        _validate_hunk_counts(hunk)
         hunks.append(hunk)
 
     return hunks
