@@ -93,12 +93,12 @@ def _contributions(
     """
     if merge_mode:
         if len(to_files) != 1:
-            raise ValueError("Can't merge_mode=True with to_files={len(to_files)}")
+            raise ValueError(f"Can't merge_mode=True with to_files={len(to_files)}")
         common = to_files[0]
         rest = from_files
     else:
         if len(from_files) != 1:
-            raise ValueError("Can't merge_mode=False with from_files={len(from_files)}")
+            raise ValueError(f"Can't merge_mode=False with from_files={len(from_files)}")
         common = from_files[0]
         rest = to_files
 

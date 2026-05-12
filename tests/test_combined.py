@@ -71,6 +71,17 @@ def test_contributions_exceptions() -> None:
         _contributions(["a", "b"], ["c", "d"], False)
 
 
+def test_contributions_exception_messages() -> None:
+    with pytest.raises(ValueError, match=r"from_files=0"):
+        _contributions([], ["c"], False)
+    with pytest.raises(ValueError, match=r"from_files=2"):
+        _contributions(["a", "b"], ["c"], False)
+    with pytest.raises(ValueError, match=r"to_files=0"):
+        _contributions(["a"], [], True)
+    with pytest.raises(ValueError, match=r"to_files=2"):
+        _contributions(["a"], ["c", "d"], True)
+
+
 def test_divergent_basic() -> None:
     assert combined_diff([""], ["a\n", "b\n"]) == """\
 --- a/file
