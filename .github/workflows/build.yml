@@ -30,15 +30,19 @@ jobs:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
       - uses: astral-sh/setup-uv@v3
-      - name: Install
-        run: |
-          uv pip install -e .[test,dev]
+      - name: Install test deps
+        if: matrix.python-version == '3.9'
+        run: uv pip install -e .[test]
+      - name: Install dev deps
+        if: matrix.python-version != '3.9'
+        run: uv pip install -e .[test,dev]
       - name: Test
         run: |
           git config --global user.name "Unit Test"
           git config --global user.email "example@example.com"
           make test
       - name: Lint
+        if: matrix.python-version != '3.9'
         run: |
           make lint
 
