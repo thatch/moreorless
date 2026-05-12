@@ -42,6 +42,23 @@ moreorless.combined.combined_diff(
     ...
 ```
 
+# Version Compat
+
+This library is compatible with Python 3.9+, but should be linted under the
+newest stable version.
+
+# Versioning
+
+This library follows [meanver](https://meanver.org/), which basically means
+[semver](https://semver.org/) along with a promise to rename when the major
+version changes.
+
+Install the optional `cli` extra if you want the colored diff helpers:
+
+```bash
+pip install moreorless[cli]
+```
+
 # License
 
 moreorless is copyright [Tim Hatch](http://timhatch.com/), and licensed under

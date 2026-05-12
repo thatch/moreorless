@@ -83,7 +83,7 @@ celerybeat-schedule
 
 # Environments
 .env
-.venv
+.venv*
 env/
 venv/
 ENV/
@@ -105,3 +105,9 @@ venv.bak/
 
 # Visual Studio Code
 .vscode/
+
+# Vim swapfiles
+*.sw[op]
+
+# Setuptools-scm
+_version.py
