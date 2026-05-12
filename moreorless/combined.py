@@ -158,6 +158,10 @@ def _contributions(
 
 
 def _group(lines: Sequence[Line], context: int = 3) -> Iterable[Union[Hunk, Snip]]:
+
+    if not lines:
+        return
+
     no_change_count = [0] * len(lines)
     # Take as input the counts which represent symbols
     # + a
@@ -186,6 +190,7 @@ def _group(lines: Sequence[Line], context: int = 3) -> Iterable[Union[Hunk, Snip
             tmp_rev[i - 1] = tmp_rev[i] + 1
 
     result = [min(a, b) for a, b in zip(tmp_fwd, tmp_rev)]
+
     # Now we have the triangular count, and anywhere the count is >= context we can split
     # 0 + a
     # 1   b
@@ -196,7 +201,6 @@ def _group(lines: Sequence[Line], context: int = 3) -> Iterable[Union[Hunk, Snip
     context_flag = 0
     buf = []
     omit_count = 0
-    assert line
     starts = [1] * len(line.contributions)
 
     for i, line in enumerate(lines):
