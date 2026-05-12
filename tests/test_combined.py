@@ -27,8 +27,8 @@ def test_line_mixed() -> None:
 
 def test_line_no_newline() -> None:
     li = Line((1, 1, 0, 0), "foo")
-    assert li.to_str(is_merge=True) == "-- foo\n\\ No newline at end of file"
-    assert li.to_str(is_merge=False) == "++ foo\n\\ No newline at end of file"
+    assert li.to_str(is_merge=True) == "-- foo\n\\ No newline at end of file\n"
+    assert li.to_str(is_merge=False) == "++ foo\n\\ No newline at end of file\n"
 
 
 def test_hunk_context() -> None:
@@ -167,6 +167,18 @@ def test_divergent_three_insert_same() -> None:
         Line((1, 1, 0), "b\n"),
         Line((0, 1, 0), "d\n"),
     ]
+
+
+def test_adjacent_no_newline_lines() -> None:
+    assert combined_diff(["a"], ["b"]) == """\
+--- a/file
++++ b/file
+@@ -1,1 +1,1 @@
+-a
+\\ No newline at end of file
++b
+\\ No newline at end of file
+"""
 
 
 def test_merge_not_actually_merge() -> None:
