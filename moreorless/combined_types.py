@@ -29,7 +29,7 @@ class Line:
             buf.append(self.line)
         if not self.line.endswith("\n"):
             buf.append("\n")
-            buf.append("\\ no newline at end of file")
+            buf.append("\\ No newline at end of file")
 
     def to_str(self, is_merge: bool) -> str:
         buf: List[str] = []

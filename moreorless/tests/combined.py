@@ -26,10 +26,10 @@ class LineTest(TestCase):
     def test_no_newline(self) -> None:
         li = Line((1, 1, 0, 0), "foo")
         self.assertEqual(
-            "-- foo\n\\ no newline at end of file", li.to_str(is_merge=True)
+            "-- foo\n\\ No newline at end of file", li.to_str(is_merge=True)
         )
         self.assertEqual(
-            "++ foo\n\\ no newline at end of file", li.to_str(is_merge=False)
+            "++ foo\n\\ No newline at end of file", li.to_str(is_merge=False)
         )
 
 
